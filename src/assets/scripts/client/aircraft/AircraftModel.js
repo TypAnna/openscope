@@ -15,7 +15,9 @@ import GameController, { GAME_EVENTS } from '../game/GameController';
 import ModeController from './ModeControl/ModeController';
 import Pilot from './Pilot/Pilot';
 import TimeKeeper from '../engine/TimeKeeper';
-import UiController from '../UiController';
+import UiController from '../ui/UiController';
+import EventBus from '../lib/EventBus';
+import { AIRCRAFT_EVENT } from '../constants/eventNames';
 import {
     radians_normalize,
     angle_offset
@@ -29,6 +31,7 @@ import {
 } from '../math/core';
 import {
     getOffset,
+    calculateCrosswindAngle,
     calculateTurnInitiationDistance
 } from '../math/flightMath';
 import {
@@ -43,7 +46,7 @@ import {
     vscale,
     vsub
 } from '../math/vector';
-import { speech_say } from '../speech';
+import { speech_say, randomizePilotVoice } from '../speech';
 import {
     digits_decimal,
     groupNumbers,
@@ -166,6 +169,17 @@ export default class AircraftModel {
          * @default 1200
          */
         this.transponderCode = 1200;
+
+        /**
+         * Pilot's voice
+         *
+         * Initially generated and assined on instantiation by the `AircraftController`
+         *
+         * @for AircraftModel
+         * @property pilotVoice
+         * @type {string}
+         */
+        this.pilotVoice = randomizePilotVoice();
 
         /**
          * Magnetic heading the aircraft is facing
@@ -300,20 +314,11 @@ export default class AircraftModel {
 
         /**
          * @for AircraftModel
-         * @property notice
-         * @type {boolean}
-         * @default false
-         */
-        this.notice = false;
-
-        /**
-         * @for AircraftModel
          * @property warning
          * @type {boolean}
          * @default false
          */
         this.warning = false;
-
 
         /**
          * Whether aircraft has crashed
@@ -461,6 +466,34 @@ export default class AircraftModel {
             speed: 0
         };
 
+        /**
+         * @for AircraftModel
+         * @property model
+         * @type {AircraftTypeDefinitionModel}
+         */
+        this.model = new AircraftTypeDefinitionModel(options.model);
+
+        /**
+         * @for AircraftModel
+         * @property mcp
+         * @type {ModeController}
+         */
+        this.mcp = new ModeController();
+
+        /**
+         * @for AircraftModel
+         * @property fms
+         * @type {Fms}
+         */
+        this.fms = new Fms(options);
+
+        /**
+         * @for AircraftModel
+         * @property pilot
+         * @type {Pilot}
+         */
+        this.pilot = new Pilot(this.fms, this.mcp);
+
         this.takeoffTime = options.category === FLIGHT_CATEGORY.ARRIVAL
             ? TimeKeeper.accumulatedDeltaTime
             : null;
@@ -468,13 +501,19 @@ export default class AircraftModel {
         this.buildCurrentTerrainRanges();
         this.buildRestrictedAreaLinks();
         this.parse(options);
-        this.initFms(options);
 
-        this.mcp = new ModeController();
-        this.model = new AircraftTypeDefinitionModel(options.model);
-        this.pilot = new Pilot(this.fms, this.mcp);
+        const airport = AirportController.airport_get();
+        // const initialRunway = airport.getActiveRunwayForCategory(this.category);
 
-        if (options.category !== FLIGHT_CATEGORY.DEPARTURE) {
+        if (this.category === FLIGHT_CATEGORY.DEPARTURE) {
+            this.setFlightPhase(FLIGHT_PHASE.APRON);
+            this.altitude = airport.positionModel.elevation;
+            this.speed = 0;
+        } else if (this.category !== FLIGHT_CATEGORY.ARRIVAL && this.category !== FLIGHT_CATEGORY.OVERFLIGHT) {
+            throw new Error('Invalid #category found in AircraftModel');
+        }
+
+        if (this.category !== FLIGHT_CATEGORY.DEPARTURE) {
             const bottomAltitude = this.fms.getBottomAltitude();
             const airportModel = AirportController.airport_get();
             const airspaceCeiling = airportModel.maxAssignableAltitude;
@@ -584,22 +623,6 @@ export default class AircraftModel {
         this.isControllable = data.category === FLIGHT_CATEGORY.DEPARTURE;
     }
 
-    initFms(data) {
-        const airport = AirportController.airport_get();
-        // const initialRunway = airport.getActiveRunwayForCategory(this.category);
-        this.fms = new Fms(data);
-
-        if (this.category === FLIGHT_CATEGORY.DEPARTURE) {
-            this.setFlightPhase(FLIGHT_PHASE.APRON);
-            this.altitude = airport.positionModel.elevation;
-            this.speed = 0;
-
-            return;
-        } else if (this.category !== FLIGHT_CATEGORY.ARRIVAL && this.category !== FLIGHT_CATEGORY.OVERFLIGHT) {
-            throw new Error('Invalid #category found in AircraftModel');
-        }
-    }
-
     /**
      * Build an object that contains all the correct data, in the correct shape,
      * so it can be injected into the view.
@@ -618,7 +641,7 @@ export default class AircraftModel {
         let flightPlanAltitude = '-';
 
         if (this.mcp.altitude !== INVALID_NUMBER) {
-            assignedAltitude = this.mcp.altitude * UNIT_CONVERSION_CONSTANTS.FT_FL;
+            assignedAltitude = Math.round(this.mcp.altitude) * UNIT_CONVERSION_CONSTANTS.FT_FL;
         }
 
         if (this.fms.flightPlanAltitude !== INVALID_NUMBER) {
@@ -637,24 +660,6 @@ export default class AircraftModel {
             departureAirportId: this.origin.toUpperCase(),
             flightPlan: this.fms.getFullRouteStringWithoutAirportsWithSpaces()
         };
-    }
-
-    /**
-     * @for AircraftModel
-     * @method onAirspaceExit
-     */
-    onAirspaceExit() {
-        if (this.isArrival()) {
-            return this._onAirspaceExitForArrival();
-        }
-
-        if (this.mcp.headingMode !== MCP_MODE.HEADING.LNAV) {
-            this._onAirspaceExitWithoutClearance();
-
-            return;
-        }
-
-        this._onAirspaceExitWithClearance();
     }
 
     /**
@@ -716,7 +721,7 @@ export default class AircraftModel {
 
         if (weightClass === 'H') {
             return 'heavy';
-        } else if (weightClass === 'U') {
+        } else if (weightClass === 'J') {
             return 'super';
         }
 
@@ -1086,27 +1091,6 @@ export default class AircraftModel {
     }
 
     /**
-     * Evaluate the intercept angle and altitude, and issue warnings and penalties as appropriate
-     *
-     * @for AircraftModel
-     * @method judgeLocalizerInterception
-     */
-    judgeLocalizerInterception() {
-        if (this.projected) {
-            return;
-        }
-
-        if (this.isAboveGlidepath()) {
-            this.penalizeLocalizerInterceptAltitude();
-        }
-
-        // TODO: How can we evaluate the intercept angle?
-        // if () {
-        //     this.penalizeLocalizerInterceptAngle();
-        // }
-    }
-
-    /**
      * Sets `#isFlightStripRemovable` to true
      *
      * Provides a single source of change for the value of `#isFlightStripRemovable`
@@ -1132,26 +1116,19 @@ export default class AircraftModel {
         this.isRemovable = true;
     }
 
-    // TODO: this should be a method in the `AirportModel`
     /**
-     * @for AircraftModel
-     * @method getWind
-     */
+      * @for AircraftModel
+      * @method getWind
+      * @return {object} headwind and crosswind
+      */
     getWind() {
-        const windForRunway = {
-            cross: 0,
-            head: 0
+        const { wind } = AirportController.airport_get();
+        const crosswindAngle = calculateCrosswindAngle(this.heading, wind.angle);
+
+        return {
+            cross: sin(crosswindAngle) * wind.speed,
+            head: cos(crosswindAngle) * wind.speed
         };
-
-        const { wind } = this.fms.arrivalAirportModel || this.fms.departureAirportModel;
-        const runwayModel = this.fms.arrivalRunwayModel || this.fms.departureRunwayModel;
-        const angle = runwayModel.calculateCrosswindAngleForRunway(wind.angle);
-
-        // TODO: these two bits of math should be abstracted to helper functions
-        windForRunway.cross = sin(angle) * wind.speed;
-        windForRunway.head = cos(angle) * wind.speed;
-
-        return windForRunway;
     }
 
     /**
@@ -1166,32 +1143,6 @@ export default class AircraftModel {
 
         this.heading = runwayModel.angle;
         this.altitude = runwayModel.elevation;
-    }
-
-    /**
-     * Display a waring and record an illegal glideslope intercept event
-     *
-     * @for AircraftModel
-     * @method penalizeLocalizerInterceptAltitude
-     */
-    penalizeLocalizerInterceptAltitude() {
-        const isWarning = true;
-
-        UiController.ui_log(`${this.callsign} intercepted localizer above glideslope`, isWarning);
-        GameController.events_recordNew(GAME_EVENTS.LOCALIZER_INTERCEPT_ABOVE_GLIDESLOPE);
-    }
-
-    /**
-     * Display a waring and record an illegal approach event
-     *
-     * @for AircraftModel
-     * @method penalizeLocalizerInterceptAngle
-     */
-    penalizeLocalizerInterceptAngle() {
-        const isWarning = true;
-
-        UiController.ui_log(`${this.callsign} approach course intercept angle was greater than 30 degrees`, isWarning);
-        GameController.events_recordNew(GAME_EVENTS.ILLEGAL_APPROACH_CLEARANCE);
     }
 
     /**
@@ -1227,10 +1178,13 @@ export default class AircraftModel {
             UiController.ui_log(logMessage(writtenCallsign));
         }
 
-        speech_say([{
-            type: 'text',
-            content: logMessage(spokenCallsign)
-        }]);
+        speech_say(
+            [{
+                type: 'text',
+                content: logMessage(spokenCallsign)
+            }],
+            this.pilotVoice
+        );
     }
 
     /**
@@ -1259,20 +1213,26 @@ export default class AircraftModel {
             }
 
             UiController.ui_log(`${AirportController.airport_get().radio.app}, ${this.callsign} with you ${alt_log}`);
-            speech_say([
-                { type: 'text', content: `${AirportController.airport_get().radio.app}, ` },
-                { type: 'callsign', content: this },
-                { type: 'text', content: `with you ${alt_say}` }
-            ]);
+            speech_say(
+                [
+                    { type: 'text', content: `${AirportController.airport_get().radio.app}, ` },
+                    { type: 'callsign', content: this },
+                    { type: 'text', content: `with you ${alt_say}` }
+                ],
+                this.pilotVoice
+            );
         }
 
         if (this.isDeparture()) {
             UiController.ui_log(`${AirportController.airport_get().radio.twr}, ${this.callsign}, ready to taxi`);
-            speech_say([
-                { type: 'text', content: AirportController.airport_get().radio.twr },
-                { type: 'callsign', content: this },
-                { type: 'text', content: ', ready to taxi' }
-            ]);
+            speech_say(
+                [
+                    { type: 'text', content: AirportController.airport_get().radio.twr },
+                    { type: 'callsign', content: this },
+                    { type: 'text', content: ', ready to taxi' }
+                ],
+                this.pilotVoice
+            );
         }
     }
 
@@ -1284,15 +1244,15 @@ export default class AircraftModel {
      */
     taxiToRunway(runwayModel) {
         if (this.isAirborne()) {
-            return [false, 'unable to taxi, we\'re airborne'];
+            return [false, 'unable to taxi, we\'re already airborne'];
+        }
+
+        if (this.flightPhase === FLIGHT_PHASE.TAKEOFF) {
+            return [false, 'unable to taxi, we\'re already taking off'];
         }
 
         if (this.isArrival()) {
             return [false, 'unable to taxi to runway, we have just landed'];
-        }
-
-        if (!this.fms.isRunwayModelValidForSid(runwayModel)) {
-            this.pilot.cancelDepartureClearance(this);
         }
 
         this.setFlightPhase(FLIGHT_PHASE.TAXI);
@@ -1311,8 +1271,8 @@ export default class AircraftModel {
         );
 
         const readback = {};
-        readback.log = `taxi to runway ${runwayModel.name}`;
-        readback.say = `taxi to runway ${radio_runway(runwayModel.name)}`;
+        readback.log = `taxi to and hold short of Runway ${runwayModel.name}`;
+        readback.say = `taxi to and hold short of Runway ${radio_runway(runwayModel.name)}`;
 
         return [true, readback];
     }
@@ -1320,41 +1280,63 @@ export default class AircraftModel {
     /**
      * @for AircraftModel
      * @method _changeFromTaxiToWaiting
-     * @param args {array}
      */
-    _changeFromTaxiToWaiting(args) {
+    _changeFromTaxiToWaiting() {
         this.setFlightPhase(FLIGHT_PHASE.WAITING);
     }
 
-    // TODO: This method should be moved elsewhere, since it doesn't really belong to the aircraft itself
     /**
+     * Initialize all autopilot systems after being given an IFR clearance to destination and execute takeoff.
+     *
      * @for AircraftModel
-     * @method scoreWind
-     * @param action
+     * @method takeoff
+     * @param runway {RunwayModel} the runway taking off on
      */
-    scoreWind(action) {
-        const score = 0;
-        const components = this.getWind();
-        const isWarning = true;
+    takeoff(runway) {
+        const cruiseSpeed = this.model.speed.cruise;
+        const initialAltitude = this.fms.getInitialClimbClearance();
 
-        // TODO: these two if blocks could be done in a single switch statement
-        if (components.cross >= 20) {
-            GameController.events_recordNew(GAME_EVENTS.EXTREME_CROSSWIND_OPERATION);
-            UiController.ui_log(`${this.callsign} ${action} with major crosswind`, isWarning);
-        } else if (components.cross >= 10) {
-            GameController.events_recordNew(GAME_EVENTS.HIGH_CROSSWIND_OPERATION);
-            UiController.ui_log(`${this.callsign} ${action} with crosswind`, isWarning);
+        this._prepareMcpForTakeoff(initialAltitude, runway.angle, cruiseSpeed);
+        this.setFlightPhase(FLIGHT_PHASE.TAKEOFF);
+        EventBus.trigger(AIRCRAFT_EVENT.TAKEOFF, this, runway);
+
+        this.takeoffTime = TimeKeeper.accumulatedDeltaTime;
+        runway.lastDepartedAircraftCallsign = this.callsign;
+    }
+
+    /**
+     * Initialize all autopilot systems for takeoff.
+     *
+     * @for AircraftModel
+     * @method _prepareMcpForTakeoff
+     * @param altitude {number}
+     * @param heading {number}
+     * @param speed {number}
+     */
+    _prepareMcpForTakeoff(altitude, heading, speed) {
+        if (this.mcp.altitude === INVALID_NUMBER) {
+            this.mcp.setAltitudeFieldValue(altitude);
         }
 
-        if (components.head <= -10) {
-            GameController.events_recordNew(GAME_EVENTS.EXTREME_TAILWIND_OPERATION);
-            UiController.ui_log(`${this.callsign} ${action} with major tailwind`, isWarning);
-        } else if (components.head <= -5) {
-            GameController.events_recordNew(GAME_EVENTS.HIGH_TAILWIND_OPERATION);
-            UiController.ui_log(`${this.callsign} ${action} with tailwind`, isWarning);
+        if (this.mcp.altitudeMode === MCP_MODE.ALTITUDE.OFF) {
+            this.mcp.setAltitudeHold();
         }
 
-        return score;
+        if (this.mcp.heading === INVALID_NUMBER) {
+            this.mcp.setHeadingFieldValue(heading);
+        }
+
+        if (this.mcp.headingMode === MCP_MODE.HEADING.OFF) {
+            this.mcp.setHeadingLnav();
+        }
+
+        if (this.mcp.speed === INVALID_NUMBER) {
+            this.mcp.setSpeedFieldValue(speed);
+        }
+
+        if (this.mcp.speedMode === MCP_MODE.SPEED.OFF) {
+            this.mcp.setSpeedN1();
+        }
     }
 
     /**
@@ -1532,8 +1514,11 @@ export default class AircraftModel {
 
             case FLIGHT_PHASE.DESCENT:
                 if (this.pilot.hasApproachClearance && this.isEstablishedOnCourse()) {
-                    this.judgeLocalizerInterception();
                     this.setFlightPhase(FLIGHT_PHASE.APPROACH);
+
+                    if (!this.projected) {
+                        EventBus.trigger(AIRCRAFT_EVENT.APPROACH, this);
+                    }
                 }
 
                 break;
@@ -1550,6 +1535,10 @@ export default class AircraftModel {
                 }
 
                 this.setFlightPhase(FLIGHT_PHASE.LANDING);
+
+                if (!this.projected) {
+                    EventBus.trigger(AIRCRAFT_EVENT.FINAL_APPROACH, this, this.fms.arrivalRunwayModel);
+                }
 
                 break;
             }
@@ -2591,10 +2580,13 @@ export default class AircraftModel {
 
                             const isWarning = true;
                             UiController.ui_log(`${this.callsign} collided with terrain in controlled flight`, isWarning);
-                            speech_say([
-                                { type: 'callsign', content: this },
-                                { type: 'text', content: ', we\'re going down!' }
-                            ]);
+                            speech_say(
+                                [
+                                    { type: 'callsign', content: this },
+                                    { type: 'text', content: ', we\'re going down!' }
+                                ],
+                                this.pilotVoice
+                            );
 
                             GameController.events_recordNew(GAME_EVENTS.COLLISION);
                         }
@@ -2643,17 +2635,26 @@ export default class AircraftModel {
     }
 
     /**
+     * Return the presence/absence of (any existing) conflict or violation in terms
+     * of separation with another aircraft
+     *
      * @for AircraftModel
-     * @method hasAlerts
+     * @method getAlerts
+     * @return {array} [hasConflict, hasViolation]
      */
-    hasAlerts() {
+    getAlerts() {
         const alert = [false, false];
 
         for (const i in this.conflicts) {
-            const conflict = this.conflicts[i].hasAlerts();
+            const hasConflict = this.conflicts[i].hasConflict();
+            const hasViolation = this.conflicts[i].hasViolation();
 
-            alert[0] = (alert[0] || conflict[0]);
-            alert[1] = (alert[1] || conflict[1]);
+            alert[0] = (alert[0] || hasConflict);
+            alert[1] = (alert[1] || hasViolation);
+
+            if (alert[0] && alert[1]) {
+                return alert;
+            }
         }
 
         return alert;
@@ -2686,40 +2687,7 @@ export default class AircraftModel {
         }
 
         this.setIsRemovable();
-        // leaving airspace
-        this.onAirspaceExit();
-    }
-
-    /**
-     * An arriving aircraft is exiting the airpsace
-     *
-     * @for AircraftModel
-     * @method _onAirspaceExitForArrival
-     * @private
-     */
-    _onAirspaceExitForArrival() {
-        this.radioCall('leaving radar coverage as arrival', AIRPORT_CONTROL_POSITION_NAME.APPROACH, true);
-        GameController.events_recordNew(GAME_EVENTS.AIRSPACE_BUST);
-    }
-
-    /**
-     * @for AircraftModel
-     * @method _onAirspaceExitWithClearance
-     * @private
-     */
-    _onAirspaceExitWithClearance() {
-        this.radioCall('switching to center, good day', AIRPORT_CONTROL_POSITION_NAME.DEPARTURE);
-        GameController.events_recordNew(GAME_EVENTS.DEPARTURE);
-    }
-
-    /**
-     * @for AircraftModel
-     * @method _onAirspaceExitWithoutClearance
-     * @private
-     */
-    _onAirspaceExitWithoutClearance() {
-        this.radioCall('leaving radar coverage without proper clearance', AIRPORT_CONTROL_POSITION_NAME.DEPARTURE, true);
-        GameController.events_recordNew(GAME_EVENTS.NOT_CLEARED_ON_ROUTE);
+        EventBus.trigger(AIRCRAFT_EVENT.AIRSPACE_EXIT, this);
     }
 
     /**
@@ -2780,5 +2748,17 @@ export default class AircraftModel {
         }
 
         return [true];
+    }
+
+    /**
+     * Returns the distance to another aircraft in nm
+     *
+     * @for AircraftModel
+     * @method distanceToAircraft
+     * @param aircraftModel {AircraftModel}
+     * @return {number} distance in nm
+     */
+    distanceToAircraft(anotherAircraftModel) {
+        return this.positionModel.distanceToPosition(anotherAircraftModel.positionModel);
     }
 }

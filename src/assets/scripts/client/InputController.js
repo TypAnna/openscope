@@ -1,4 +1,4 @@
-/* eslint-disable camelcase, no-mixed-operators, object-shorthand, no-undef, expected-return*/
+/* eslint-disable camelcase, no-mixed-operators, object-shorthand, expected-return*/
 import $ from 'jquery';
 import _has from 'lodash/has';
 import _includes from 'lodash/includes';
@@ -6,9 +6,10 @@ import AirportController from './airport/AirportController';
 import CanvasStageModel from './canvas/CanvasStageModel';
 import EventBus from './lib/EventBus';
 import GameController from './game/GameController';
-import UiController from './UiController';
+import UiController from './ui/UiController';
 import AircraftCommandParser from './parsers/aircraftCommandParser/AircraftCommandParser';
 import ScopeCommandModel from './parsers/scopeCommandParser/ScopeCommandModel';
+import EventTracker from './EventTracker';
 import { clamp } from './math/core';
 import { EVENT } from './constants/eventNames';
 import { GAME_OPTION_NAMES } from './constants/gameOptionConstants';
@@ -16,10 +17,12 @@ import { INVALID_NUMBER } from './constants/globalConstants';
 import {
     COMMAND_CONTEXT,
     KEY_CODES,
+    LEGACY_KEY_CODES,
     MOUSE_EVENT_CODE,
     PARSED_COMMAND_NAME
 } from './constants/inputConstants';
 import { SELECTORS } from './constants/selectors';
+import { TRACKABLE_EVENT } from './constants/trackableEvents';
 
 // Temporary const declaration here to attach to the window AND use as internal propert
 const input = {};
@@ -33,9 +36,8 @@ export default class InputController {
      * @param $element {JQuery|HTML Element}
      * @param aircraftCommander {AircraftCommander}
      * @param scopeModel {ScopeModel}
-     * @param tutorialView {TutorialView}
      */
-    constructor($element, aircraftCommander, aircraftController, scopeModel, tutorialView) {
+    constructor($element, aircraftCommander, aircraftController, scopeModel) {
         this.$element = $element;
         this.$body = null;
         this.$window = null;
@@ -46,8 +48,6 @@ export default class InputController {
         this._aircraftCommander = aircraftCommander;
         this._aircraftController = aircraftController;
         this._scopeModel = scopeModel;
-        this._tutorialView = tutorialView;
-
 
         prop.input = input;
         this.input = input;
@@ -180,21 +180,6 @@ export default class InputController {
         this._mouseDelta = [0, 0];
         this._mouseDownScreenPosition = [0, 0];
         this.input.isMouseDown = false;
-    }
-
-    // TODO: The tutorial should be moved to the UiController, and then this can be removed
-    /**
-     * Close all open dialogs and return focus to the command bar
-     *
-     * @for InputController
-     * @method closeAllDialogs
-     */
-    closeAllDialogs() {
-        if (prop.tutorial.open) {
-            this._tutorialView.tutorial_close();
-        }
-
-        UiController.closeAllDialogs();
     }
 
     /**
@@ -346,29 +331,42 @@ export default class InputController {
     _onKeydown(event) {
         const currentCommandInputValue = this.$commandInput.val();
 
+        let code = event.originalEvent.code;
+
+        if (code === undefined) {
+            // fallback for legacy browsers like IE/Edge
+            code = event.originalEvent.keyCode;
+        }
+
         // TODO: this swtich can be simplified, there is a lot of repetition here
-        switch (event.which) {
+        switch (code) {
             case KEY_CODES.BAT_TICK:
+            case LEGACY_KEY_CODES.BAT_TICK:
                 this.$commandInput.val(`${currentCommandInputValue}\` `);
                 event.preventDefault();
                 this.onCommandInputChangeHandler();
 
                 break;
             case KEY_CODES.ENTER:
+            case LEGACY_KEY_CODES.ENTER:
                 this.processCommand();
 
                 break;
             case KEY_CODES.PAGE_UP:
+            case LEGACY_KEY_CODES.PAGE_UP:
                 this.selectPreviousAircraft();
                 event.preventDefault();
 
                 break;
             case KEY_CODES.PAGE_DOWN:
+            case LEGACY_KEY_CODES.PAGE_DOWN:
                 this.selectNextAircraft();
                 event.preventDefault();
 
                 break;
+            // turning
             case KEY_CODES.LEFT_ARROW:
+            case LEGACY_KEY_CODES.LEFT_ARROW:
                 if (this._isArrowControlMethod()) {
                     this.$commandInput.val(`${currentCommandInputValue} t l `);
                     event.preventDefault();
@@ -376,7 +374,18 @@ export default class InputController {
                 }
 
                 break;
+            case KEY_CODES.RIGHT_ARROW:
+            case LEGACY_KEY_CODES.RIGHT_ARROW:
+                if (this._isArrowControlMethod()) {
+                    this.$commandInput.val(`${currentCommandInputValue} t r `);
+                    event.preventDefault();
+                    this.onCommandInputChangeHandler();
+                }
+
+                break;
+            // climb / descend
             case KEY_CODES.UP_ARROW:
+            case LEGACY_KEY_CODES.UP_ARROW:
                 if (this._isArrowControlMethod()) {
                     this.$commandInput.val(`${currentCommandInputValue} c `);
                     event.preventDefault();
@@ -387,15 +396,8 @@ export default class InputController {
                 }
 
                 break;
-            case KEY_CODES.RIGHT_ARROW:
-                if (this._isArrowControlMethod()) {
-                    this.$commandInput.val(`${currentCommandInputValue} t r `);
-                    event.preventDefault();
-                    this.onCommandInputChangeHandler();
-                }
-
-                break;
             case KEY_CODES.DOWN_ARROW:
+            case LEGACY_KEY_CODES.DOWN_ARROW:
                 if (this._isArrowControlMethod()) {
                     this.$commandInput.val(`${currentCommandInputValue} d `);
                     event.preventDefault();
@@ -406,50 +408,57 @@ export default class InputController {
                 }
 
                 break;
-            case KEY_CODES.MULTIPLY:
-                this.$commandInput.val(`${currentCommandInputValue} * `);
-                event.preventDefault();
-                this.onCommandInputChangeHandler();
-
-                break;
-            case KEY_CODES.ADD:
-                this.$commandInput.val(`${currentCommandInputValue} + `);
-                event.preventDefault();
-                this.onCommandInputChangeHandler();
-
-                break;
-            case KEY_CODES.EQUALS: // mac + (actually `=`)
-                this.$commandInput.val(`${currentCommandInputValue} + `);
-                event.preventDefault();
-                this.onCommandInputChangeHandler();
-
-                break;
-            case KEY_CODES.SUBTRACT:
-                this.$commandInput.val(`${currentCommandInputValue} - `);
-                event.preventDefault();
-                this.onCommandInputChangeHandler();
-
-                break;
-            case KEY_CODES.DASH: // mac -
-                this.$commandInput.val(`${currentCommandInputValue} - `);
-                event.preventDefault();
-                this.onCommandInputChangeHandler();
-
-                break;
-            case KEY_CODES.DIVIDE:
+            // takeoff / landing
+            case KEY_CODES.NUM_DIVIDE:
+            case LEGACY_KEY_CODES.NUM_DIVIDE:
                 this.$commandInput.val(`${currentCommandInputValue} takeoff `);
                 event.preventDefault();
                 this.onCommandInputChangeHandler();
 
                 break;
+            case KEY_CODES.NUM_MULTIPLY:
+            case LEGACY_KEY_CODES.NUM_MULTIPLY:
+                this.$commandInput.val(`${currentCommandInputValue} * `);
+                event.preventDefault();
+                this.onCommandInputChangeHandler();
+
+                break;
+            // speed up / slow down
+            case KEY_CODES.NUM_ADD:
+            case LEGACY_KEY_CODES.NUM_ADD:
+                this.$commandInput.val(`${currentCommandInputValue} + `);
+                event.preventDefault();
+                this.onCommandInputChangeHandler();
+
+                break;
+            case KEY_CODES.NUM_SUBTRACT:
+            case LEGACY_KEY_CODES.NUM_SUBTRACT:
+                this.$commandInput.val(`${currentCommandInputValue} - `);
+                event.preventDefault();
+                this.onCommandInputChangeHandler();
+
+                break;
+            case KEY_CODES.F7:
+            case LEGACY_KEY_CODES.F7:
+                if (this.commandBarContext !== COMMAND_CONTEXT.SCOPE) {
+                    return;
+                }
+
+                this.$commandInput.val('QP_J ');
+                event.preventDefault();
+                this.onCommandInputChangeHandler();
+
+                break;
             case KEY_CODES.TAB:
+            case LEGACY_KEY_CODES.TAB:
                 this.$commandInput.val('');
                 event.preventDefault();
                 this._toggleCommandBarContext();
 
                 break;
-            case KEY_CODES.ESCAPE: {
-                this.closeAllDialogs();
+            case KEY_CODES.ESCAPE:
+            case LEGACY_KEY_CODES.ESCAPE:
+                UiController.closeAllDialogs();
 
                 const hasCallsign = _includes(currentCommandInputValue, this.input.callsign);
                 const hasOnlyCallsign = currentCommandInputValue.trim() === this.input.callsign;
@@ -463,8 +472,7 @@ export default class InputController {
 
                 this.$commandInput.val(`${this.input.callsign} `);
 
-                return;
-            }
+                break;
             default:
                 this.$commandInput.focus();
         }
@@ -655,7 +663,7 @@ export default class InputController {
     processSystemCommand(aircraftCommandParser) {
         switch (aircraftCommandParser.command) {
             case PARSED_COMMAND_NAME.TUTORIAL:
-                this._tutorialView.tutorial_toggle();
+                UiController.onToggleTutorial();
 
                 return true;
 
@@ -684,6 +692,7 @@ export default class InputController {
                 }
 
                 GameController.updateTimescale(nextTimewarpValue);
+                EventTracker.recordEvent(TRACKABLE_EVENT.OPTIONS, 'timewarp-maunal-entry', `${nextTimewarpValue}`);
 
                 return true;
 

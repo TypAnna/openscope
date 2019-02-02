@@ -489,6 +489,7 @@ export default class SpawnPatternModel extends BaseModel {
         this.speed = this._extractSpeedFromJson(spawnPatternJson);
         this.method = spawnPatternJson.method;
         this.rate = parseFloat(spawnPatternJson.rate);
+        this.entrail = _get(spawnPatternJson, 'entrail', this.entrail);
 
         this._routeModel = new RouteModel(spawnPatternJson.route);
         this.cycleStartTime = 0;
@@ -584,7 +585,7 @@ export default class SpawnPatternModel extends BaseModel {
      * @for SpawnPatternModel
      * @method getNextDelayValue
      * @param gameTime {number}
-     * @return {number}             Next delay period based on spawn method
+     * @return {number}  Next delay period based on spawn method in seconds
      */
     getNextDelayValue(gameTime = 0) {
         switch (this.method) {
@@ -626,7 +627,6 @@ export default class SpawnPatternModel extends BaseModel {
             return;
         }
 
-        // TODO: accept `entrail` param from json
         this._aircraftPerHourUp = this.speed / this.entrail[0];
         this._aircraftPerHourDown = this.speed / this.entrail[1];  // to help the uptime calculation
 
