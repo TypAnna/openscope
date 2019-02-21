@@ -51,7 +51,7 @@ class TimeKeeper {
         this._elapsedFrameCount = 0;
 
         /**
-         * Time difference in seconds between the `#lastFrame` and `#_frameStartTimestamp`
+         * Time difference in milliseconds between the `#lastFrame` and `#_frameStartTimestamp`
          *
          * **This is the most important value of this class.**
          *
@@ -222,7 +222,7 @@ class TimeKeeper {
      * https://en.wikipedia.org/wiki/Delta_timing
      *
      * @property deltaTime
-     * @return {number} current delta time in seconds
+     * @return {number} current delta time in milliseconds
      */
     get deltaTime() {
         const deltaTimeOffsetBySimulationRate = this._frameDeltaTime * this._simulationRate;
@@ -292,7 +292,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method getDeltaTimeForGameStateAndTimewarp
-     * @return {number} delta time in seconds
+     * @return {number} delta time in milliseconds
      */
     getDeltaTimeForGameStateAndTimewarp() {
         if (this.isPaused || this._isReturningFromPauseAndNotFutureTrack()) {
@@ -390,7 +390,7 @@ class TimeKeeper {
             return;
         }
 
-        const currentTime = this.gameTimeSeconds;
+        const currentTime = this.gameTimeMilliseconds;
 
         this._incrementFrame();
         this._calculateNextDeltaTime(currentTime);
