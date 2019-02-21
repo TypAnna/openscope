@@ -178,7 +178,7 @@ class TimeKeeper {
     }
 
     /**
-     * Accumulated time since the start of the simulation in seconds
+     * Accumulated time since the start of the simulation in milliseconds
      *
      * @property accumulatedDeltaTime
      * @type {number}
