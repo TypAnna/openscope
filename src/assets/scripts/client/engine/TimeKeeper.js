@@ -438,7 +438,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method _calculateNextDelatTime
-     * @param currentTime {number} current time in seconds
+     * @param currentTime {number} current time in milliseconds
      * @private
      */
     _calculateNextDeltaTime(currentTime) {
