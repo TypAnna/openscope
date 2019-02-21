@@ -51,7 +51,7 @@ class TimeKeeper {
         this._elapsedFrameCount = 0;
 
         /**
-         * Time difference in seconds between the `#lastFrame` and `#_frameStartTimestamp`
+         * Time difference in milliseconds between the `#lastFrame` and `#_frameStartTimestamp`
          *
          * **This is the most important value of this class.**
          *
@@ -438,7 +438,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method _calculateNextDelatTime
-     * @param currentTime {number} current time in seconds
+     * @param currentTime {number} current time in milliseconds
      * @private
      */
     _calculateNextDeltaTime(currentTime) {
