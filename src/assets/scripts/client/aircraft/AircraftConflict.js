@@ -126,8 +126,8 @@ export default class AircraftConflict {
 
         // TODO: replace magic numbers with enum
         // Ignore aircraft in the first minute of their flight
-        if (gameTime - this.aircraft[0].takeoffTime < 60 ||
-            gameTime - this.aircraft[1].takeoffTime < 60) {
+        if (gameTime - this.aircraft[0].takeoffTime < 60000 ||
+            gameTime - this.aircraft[1].takeoffTime < 60000) {
             return;
         }
 
