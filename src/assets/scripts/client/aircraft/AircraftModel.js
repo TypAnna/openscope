@@ -342,14 +342,14 @@ export default class AircraftModel {
 
         /**
          * Time spent taxiing to the runway. *NOTE* this should be INCREASED
-         * to around 60 once the taxi vs LUAW issue is resolved (#406)
+         * to around 60000 once the taxi vs LUAW issue is resolved (#406)
          *
          * @for AircraftModel
          * @property taxi_time
          * @type {number}
-         * @default 3
+         * @default 3000
          */
-        this.taxi_time = 3;
+        this.taxi_time = 3000;
 
         /**
          * Either IFR or VFR (Instrument/Visual Flight Rules)
@@ -1879,6 +1879,7 @@ export default class AircraftModel {
         const offset = getOffset(this, waypointRelativePosition, inboundHeading);
         const holdLegDurationInMinutes = holdParameters.legLength.replace('min', '');
         const holdLegDurationInSeconds = holdLegDurationInMinutes * TIME.ONE_MINUTE_IN_SECONDS;
+        const holdLegDurationInMilliSeconds = holdLegDurationInSeconds * TIME.ONE_SECOND_IN_MILLISECONDS;
         const gameTime = TimeKeeper.accumulatedDeltaTime;
         const isPastFix = offset[1] < 1 && offset[2] < 2;
         const isTimerSet = holdParameters.timer !== INVALID_NUMBER;
@@ -1895,7 +1896,7 @@ export default class AircraftModel {
         let nextTargetHeading = outboundHeading;
 
         if (this.heading === outboundHeading && !isTimerSet) {
-            currentWaypoint.setHoldTimer(gameTime + holdLegDurationInSeconds);
+            currentWaypoint.setHoldTimer(gameTime + holdLegDurationInMilliSeconds);
         }
 
         if (isTimerExpired) {
