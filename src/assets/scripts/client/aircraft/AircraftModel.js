@@ -2325,8 +2325,8 @@ export default class AircraftModel {
             descentRate = this.model.rate.descent;
         }
 
-        const feetPerSecond = descentRate * TIME.ONE_SECOND_IN_MINUTES;
-        const feetDescended = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const feetPerMilliSecond = descentRate * TIME.ONE_MILLISECOND_IN_MINUTES;
+        const feetDescended = feetPerMilliSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
         if (abs(altitude_diff) < feetDescended) {
             this.altitude = this.target.altitude;
