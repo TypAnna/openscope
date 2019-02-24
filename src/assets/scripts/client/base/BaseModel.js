@@ -65,4 +65,21 @@ export default class BaseModel {
         // Default option since it is an optional parameter
         return `${modelName}-`;
     }
+
+    /**
+     * This will copy the the basemodelobject and return it
+     * @returns a copy of the object.
+     */
+    copy() {
+        const copy = this;
+        for (const attr in this) {  
+            if (this[attr] instanceof BaseModel) {
+                copy[attr] = this[attr].copy();
+            }
+            else{
+                copy[attr] = this[attr];
+            } 
+        }
+        return copy;
+    }
 }

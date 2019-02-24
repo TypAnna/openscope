@@ -1,4 +1,5 @@
 import _uniqueId from 'lodash/uniqueId';
+import BaseModel from './BaseModel';
 
 /**
  * Base class from which a collection type class can inherit from.
@@ -73,4 +74,22 @@ export default class BaseCollection {
     // addItems()
     // addItem()
     // removeItem()
+
+    /**
+     * This will copy the the basemodelobject and return it
+     * @returns a copy of the object.
+     */
+    copy() {
+        const copy = this;
+        for (const attr in this) {  
+            // Handle Array
+            if (this[attr] instanceof BaseModel) {
+                copy[attr] = this[attr].copy();
+            }
+            else{
+                copy[attr] = this[attr];
+            }            
+        }   
+        return copy;
+    }
 }
