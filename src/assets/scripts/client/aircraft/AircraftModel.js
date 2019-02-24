@@ -2267,7 +2267,7 @@ export default class AircraftModel {
             return;
         }
 
-        const secondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const secondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_SECONDS;
         const angle_diff = angle_offset(this.target.heading, this.heading);
         const angle_change = PERFORMANCE.TURN_RATE * secondsElapsed;
 

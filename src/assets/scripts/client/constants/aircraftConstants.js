@@ -223,13 +223,13 @@ export const PERFORMANCE = {
     TAKEOFF_TURN_ALTITUDE: 400,
 
     /**
-     * Rate of turn, in radians per second
+     * Rate of turn, in radians per second //Kept per second unit since that is standard
      *
      * @property TURN_RATE
      * @type {number}
      * @final
      */
-    TURN_RATE: 0.0523598776,    // 3 degrees
+    TURN_RATE: 0.0523598776 ,    // 3 degrees
 
     /**
      * Proportion of the maximum capable descent rate that aircraft will use by default
