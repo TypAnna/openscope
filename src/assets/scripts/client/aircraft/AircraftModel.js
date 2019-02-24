@@ -2207,7 +2207,7 @@ export default class AircraftModel {
 
         if (this.hit) {
             // 90fps fall rate?...
-            this.altitude -= 90 * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+            this.altitude -= 0.09 * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
             this.speed *= 0.99;
 
             return;
@@ -2227,7 +2227,7 @@ export default class AircraftModel {
         // const nextHistoricalPosition = [
         //     this.positionModel.relativePosition[0],
         //     this.positionModel.relativePosition[1],
-        //     offsetGameTime
+        //     offsetGameTime //note that we might need to accomodate for change in time unit (seconds -> milliseconds)
         // ];
 
         // TODO: whats the difference here between the if and else blocks? why are we looking for a 0 length?
@@ -2240,7 +2240,7 @@ export default class AircraftModel {
                 offsetGameTime
             ]);
             // TODO: this can be abstracted
-        } else if (abs(offsetGameTime - this.relativePositionHistory[this.relativePositionHistory.length - 1][2]) > 4 / GameController.game_speedup()) {
+        } else if (abs(offsetGameTime - this.relativePositionHistory[this.relativePositionHistory.length - 1][2]) > 4000 / GameController.game_speedup()) {
             this.relativePositionHistory.push([
                 this.positionModel.relativePosition[0],
                 this.positionModel.relativePosition[1],
