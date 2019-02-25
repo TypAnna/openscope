@@ -227,7 +227,7 @@ class TimeKeeper {
     get deltaTime() {
         const deltaTimeOffsetBySimulationRate = this._frameDeltaTime * this._simulationRate;
 
-        return Math.min(deltaTimeOffsetBySimulationRate, 100);
+        return Math.min(deltaTimeOffsetBySimulationRate, 100 * TIME.ONE_SECOND_IN_MILLISECONDS);
     }
 
     /**
