@@ -368,7 +368,7 @@ class GameController {
      * @for GameController
      * @method game_timeout
      * @param func {function} called when timeout is triggered
-     * @param delay {number} in seconds
+     * @param delay {number} in milliseconds
      * @param that
      * @param data
      * @return {array} gameTimeout
@@ -386,7 +386,7 @@ class GameController {
      * @for GameController
      * @method game_interval
      * @param func {function} called when timeout is triggered
-     * @param delay {number} in seconds
+     * @param delay {number} in milliseconds
      * @param that
      * @param data
      * @return {array} to
