@@ -35,3 +35,11 @@ ava('.destroy() does not throw when called from and extending class', t => {
 
     t.notThrows(() => collection.destroy());
 });
+
+ava('.copy is called for a created object', t => {
+    const result = new BaseCollection();
+    const copy = result.copy();
+    t.true(_isString(copy._id));
+    t.true(_isArray(copy._items));
+    t.true(copy.length === 0);
+});

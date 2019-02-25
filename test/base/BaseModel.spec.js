@@ -54,3 +54,9 @@ ava('.reset() does not throw when called from and extending class', t => {
 
     t.notThrows(() => model.reset());
 });
+
+ava('.copy() a model with id modelname', (t) => {
+    const model = new BaseModel('modelName');
+    const cop = model.copy();
+    t.true(cop._id.indexOf('modelName') !== -1);
+});
