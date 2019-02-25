@@ -2328,6 +2328,7 @@ export default class AircraftModel {
             descentRate = this.model.rate.descent;
         }
 
+        // TODO: Change descentRate to milliseconds
         const feetPerSecond = descentRate * TIME.ONE_SECOND_IN_MINUTES;
         const feetDescended = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
@@ -2353,7 +2354,8 @@ export default class AircraftModel {
         if (this.target.expedite) {
             climbRate = this.model.rate.climb;
         }
-
+        
+        // TODO: Change climbRate to milliseconds
         const feetPerSecond = climbRate * TIME.ONE_SECOND_IN_MINUTES;
         const feetClimbed = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
@@ -2428,7 +2430,7 @@ export default class AircraftModel {
         const groundSpeed = vlen(flightPathVector);
 
         // Calculate new position
-        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_SECOND_IN_HOURS;
+        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_HOURS;
         const distanceTraveled_nm = groundSpeed * hoursElapsed;
 
         this.positionModel.setCoordinatesByBearingAndDistance(groundTrack, distanceTraveled_nm);
