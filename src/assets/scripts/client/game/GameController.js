@@ -392,7 +392,7 @@ class GameController {
      * @return {array} to
      */
     game_interval(func, delay, that, data) {
-        const to = [func, TimeKeeper.accumulatedDeltaTime + delay, data, §, true, that];
+        const to = [func, TimeKeeper.accumulatedDeltaTime + delay, data, delay, true, that];
 
         this.game.timeouts.push(to);
 
