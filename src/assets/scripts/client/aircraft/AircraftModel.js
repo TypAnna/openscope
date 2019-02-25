@@ -2424,7 +2424,7 @@ export default class AircraftModel {
         const groundSpeed = vlen(flightPathVector);
 
         // Calculate new position
-        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_SECOND_IN_HOURS;
+        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_HOURS;
         const distanceTraveled_nm = groundSpeed * hoursElapsed;
 
         this.positionModel.setCoordinatesByBearingAndDistance(groundTrack, distanceTraveled_nm);
