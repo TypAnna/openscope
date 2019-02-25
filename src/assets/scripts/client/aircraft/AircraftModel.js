@@ -831,7 +831,7 @@ export default class AircraftModel {
         const waypointSpeed = waypointModel.speedMaximum;
         const waypointDistance = this.positionModel.distanceToPosition(waypointModel.positionModel);
         const speedChange = waypointSpeed - this.speed;
-        const decelerationRate = -this.model.rate.decelerate / 2;   // units of rate.decel are 'knots per 2 seconds'
+        const decelerationRate = -this.model.rate.decelerate / 2000;   // units of rate.decel are 'knots per 2 seconds, in milliseconds'
         const decelerationTime = speedChange / decelerationRate;
         const timeUntilWaypoint = waypointDistance / this.groundSpeed * TIME.ONE_HOUR_IN_MILLISECONDS;
 
@@ -1753,9 +1753,12 @@ export default class AircraftModel {
         const headingDifference = angle_offset(course, this.heading);
         const bearingFromAircaftToRunway = this.positionModel.bearingToPosition(datum);
         const angleAwayFromLocalizer = course - bearingFromAircaftToRunway;
-        const turnTimeInSeconds = abs(headingDifference) / PERFORMANCE.TURN_RATE;    // time to turn headingDifference degrees
+        const turnTimeInMilliSeconds = abs(headingDifference) / PERFORMANCE.TURN_RATE * TIME.ONE_SECOND_IN_MILLISECONDS;    // time to turn headingDifference degrees
+        // Radians / seconds is standard and will be used as seconds. 
         // TODO: this should be moved to a class method `.getTurningRadius()`
-        const turningRadius = this.speed * (turnTimeInSeconds * TIME.ONE_SECOND_IN_HOURS);  // dist covered in the turn, nm
+        const turningRadius = this.speed * (turnTimeInMilliSeconds * TIME.ONE_HOUR_IN_MILLISECONDS);  // dist covered in the turn, nm
+
+
         const distanceCoveredDuringTurn = turningRadius * abs(headingDifference);
         const distanceToLocalizer = lateralDistanceFromCourseNm / sin(headingDifference); // dist from the localizer intercept point, nm
         const distanceEarly = 0.5;    // start turn early, to avoid overshoots from tailwind
@@ -2267,9 +2270,9 @@ export default class AircraftModel {
             return;
         }
 
-        const secondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_SECONDS;
+        const milliSecondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
         const angle_diff = angle_offset(this.target.heading, this.heading);
-        const angle_change = PERFORMANCE.TURN_RATE * secondsElapsed;
+        const angle_change = PERFORMANCE.TURN_RATE * milliSecondsElapsed * TIME.ONE_MILLISECOND_IN_SECONDS;
 
         // TODO: clean this up if possible, there is a lot of branching logic here
         if (abs(angle_diff) <= angle_change) {
