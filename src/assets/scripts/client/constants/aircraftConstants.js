@@ -229,7 +229,7 @@ export const PERFORMANCE = {
      * @type {number}
      * @final
      */
-    TURN_RATE: 0.0523598776 ,    // 3 degrees
+    TURN_RATE: 0.0523598776,    // 3 degrees
 
     /**
      * Proportion of the maximum capable descent rate that aircraft will use by default
