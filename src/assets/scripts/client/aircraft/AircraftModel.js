@@ -2350,8 +2350,8 @@ export default class AircraftModel {
             climbRate = this.model.rate.climb;
         }
 
-        const feetPerSecond = climbRate * TIME.ONE_SECOND_IN_MINUTES;
-        const feetClimbed = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const feetPerMillisecond = climbRate * TIME.ONE_MILLISECOND_IN_MINUTES;
+        const feetClimbed = feetPerMillisecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
         if (abs(altitude_diff) < abs(feetClimbed)) {
             this.altitude = this.target.altitude;
@@ -2424,7 +2424,7 @@ export default class AircraftModel {
         const groundSpeed = vlen(flightPathVector);
 
         // Calculate new position
-        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_SECOND_IN_HOURS;
+        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_HOURS;
         const distanceTraveled_nm = groundSpeed * hoursElapsed;
 
         this.positionModel.setCoordinatesByBearingAndDistance(groundTrack, distanceTraveled_nm);
