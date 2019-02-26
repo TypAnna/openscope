@@ -51,7 +51,7 @@ class TimeKeeper {
         this._elapsedFrameCount = 0;
 
         /**
-         * Time difference in seconds between the `#lastFrame` and `#_frameStartTimestamp`
+         * Time difference in milliseconds between the `#lastFrame` and `#_frameStartTimestamp`
          *
          * **This is the most important value of this class.**
          *
@@ -178,7 +178,7 @@ class TimeKeeper {
     }
 
     /**
-     * Accumulated time since the start of the simulation in seconds
+     * Accumulated time since the start of the simulation in milliseconds
      *
      * @property accumulatedDeltaTime
      * @type {number}
@@ -222,12 +222,12 @@ class TimeKeeper {
      * https://en.wikipedia.org/wiki/Delta_timing
      *
      * @property deltaTime
-     * @return {number} current delta time in seconds
+     * @return {number} current delta time in milliseconds
      */
     get deltaTime() {
         const deltaTimeOffsetBySimulationRate = this._frameDeltaTime * this._simulationRate;
 
-        return Math.min(deltaTimeOffsetBySimulationRate, 100);
+        return Math.min(deltaTimeOffsetBySimulationRate, 100 * TIME.ONE_SECOND_IN_MILLISECONDS);
     }
 
     /**
@@ -292,7 +292,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method getDeltaTimeForGameStateAndTimewarp
-     * @return {number} delta time in seconds
+     * @return {number} delta time in milliseconds
      */
     getDeltaTimeForGameStateAndTimewarp() {
         if (this.isPaused || this._isReturningFromPauseAndNotFutureTrack()) {
@@ -390,7 +390,7 @@ class TimeKeeper {
             return;
         }
 
-        const currentTime = this.gameTimeSeconds;
+        const currentTime = this.gameTimeMilliseconds;
 
         this._incrementFrame();
         this._calculateNextDeltaTime(currentTime);
@@ -438,7 +438,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method _calculateNextDelatTime
-     * @param currentTime {number} current time in seconds
+     * @param currentTime {number} current time in milliseconds
      * @private
      */
     _calculateNextDeltaTime(currentTime) {
@@ -471,7 +471,7 @@ class TimeKeeper {
 
     /**
      * Boolean abstraction used to determine if this frame is being calculated after returning
-     * from pause, which is assumed when `#_frameDeltaTime` is greater than `1` and
+     * from pause, which is assumed when `#_frameDeltaTime` is greater than `1` second (1000ms) and
      * `#_simulationRate` is `1`. And this is not part of a future track calculation, when
      * `#_futureTrackDeltaTimeCache` is `-1`.
      *
@@ -480,7 +480,7 @@ class TimeKeeper {
      * @return {boolean}
      */
     _isReturningFromPauseAndNotFutureTrack() {
-        return this.deltaTime >= 1 && this._simulationRate === 1 && this._futureTrackDeltaTimeCache === -1;
+        return this.deltaTime >= 1000 && this._simulationRate === 1 && this._futureTrackDeltaTimeCache === -1;
     }
 }
 
