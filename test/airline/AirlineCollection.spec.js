@@ -50,6 +50,15 @@ ava('.findAirlineById() returns an AirlineModel when supplied an airlineId mixed
     t.true(result.icao === 'ual');
 });
 
+ava('.copy for AirlineCollection', (t) => {
+    const collection = new AirlineCollection(AIRLINE_DEFINITION_LIST_MOCK);
+    const copy = collection.copy();
+    const result = copy.findAirlineById('uAl');
+
+    t.true(result instanceof AirlineModel);
+    t.true(result.icao === 'ual');
+});
+
 ava('.findAirlineById() returns an AirlineModel when supplied an airlineId with fleet', (t) => {
     const collection = new AirlineCollection(AIRLINE_DEFINITION_LIST_MOCK);
     const result = collection.findAirlineById('ual/long');

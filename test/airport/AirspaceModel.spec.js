@@ -37,3 +37,14 @@ ava('removes last element in poly array if it is the same as the first element',
     t.false(model.poly.length === AIRSPACE_MOCK_WITH_CLOSING_ENTRY.poly.length);
     t.true(model.poly.length === AIRSPACE_MOCK_WITH_CLOSING_ENTRY.poly.length - 1);
 });
+
+
+ava('.copy an AirspaceModel', t => {
+    const model = new AirspaceModel(AIRSPACE_MOCK, airportPositionFixtureKSFO, magneticNorth);
+    const copy = model.copy();
+    t.false(typeof copy._id === 'undefined');
+    t.true(copy.floor === (AIRSPACE_MOCK.floor * 100));
+    t.true(copy.ceiling === (AIRSPACE_MOCK.ceiling * 100));
+    t.true(copy.airspace_class === AIRSPACE_MOCK.airspace_class);
+    t.true(copy.poly.length === AIRSPACE_MOCK.poly.length);
+});
