@@ -831,8 +831,9 @@ export default class AircraftModel {
         const waypointSpeed = waypointModel.speedMaximum;
         const waypointDistance = this.positionModel.distanceToPosition(waypointModel.positionModel);
         const speedChange = waypointSpeed - this.speed;
-        const decelerationRate = -this.model.rate.decelerate / 2000;   // units of rate.decel are 'knots per 2 seconds, in milliseconds'
-        const decelerationTime = speedChange / decelerationRate;
+        const decelerationRate = -this.model.rate.decelerate / 2; // units of rate.decel are 'knots per 2 seconds'
+        const decelerationTime = speedChange / decelerationRate * TIME.ONE_SECOND_IN_MILLISECONDS;
+        // decelerationTime is displayed in milliseconds. 
         const timeUntilWaypoint = waypointDistance / this.groundSpeed * TIME.ONE_HOUR_IN_MILLISECONDS;
 
         return decelerationTime > timeUntilWaypoint;
