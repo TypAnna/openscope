@@ -223,7 +223,7 @@ export const PERFORMANCE = {
     TAKEOFF_TURN_ALTITUDE: 400,
 
     /**
-     * Rate of turn, in radians per second
+     * Rate of turn, in radians per second //Kept per second unit since that is standard
      *
      * @property TURN_RATE
      * @type {number}

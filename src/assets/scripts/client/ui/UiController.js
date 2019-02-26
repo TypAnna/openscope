@@ -368,7 +368,7 @@ class UiController {
             setTimeout(() => {
                 uiLogView.remove();
             }, 10000);
-        }, 3, window, html);
+        }, 3000, window, html);
     }
 
     /**

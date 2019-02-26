@@ -342,14 +342,14 @@ export default class AircraftModel {
 
         /**
          * Time spent taxiing to the runway. *NOTE* this should be INCREASED
-         * to around 60 once the taxi vs LUAW issue is resolved (#406)
+         * to around 60000 once the taxi vs LUAW issue is resolved (#406)
          *
          * @for AircraftModel
          * @property taxi_time
          * @type {number}
-         * @default 3
+         * @default 3000
          */
-        this.taxi_time = 3;
+        this.taxi_time = 3000;
 
         /**
          * Either IFR or VFR (Instrument/Visual Flight Rules)
@@ -1879,6 +1879,7 @@ export default class AircraftModel {
         const offset = getOffset(this, waypointRelativePosition, inboundHeading);
         const holdLegDurationInMinutes = holdParameters.legLength.replace('min', '');
         const holdLegDurationInSeconds = holdLegDurationInMinutes * TIME.ONE_MINUTE_IN_SECONDS;
+        const holdLegDurationInMilliSeconds = holdLegDurationInSeconds * TIME.ONE_SECOND_IN_MILLISECONDS;
         const gameTime = TimeKeeper.accumulatedDeltaTime;
         const isPastFix = offset[1] < 1 && offset[2] < 2;
         const isTimerSet = holdParameters.timer !== INVALID_NUMBER;
@@ -1895,7 +1896,7 @@ export default class AircraftModel {
         let nextTargetHeading = outboundHeading;
 
         if (this.heading === outboundHeading && !isTimerSet) {
-            currentWaypoint.setHoldTimer(gameTime + holdLegDurationInSeconds);
+            currentWaypoint.setHoldTimer(gameTime + holdLegDurationInMilliSeconds);
         }
 
         if (isTimerExpired) {
@@ -2206,7 +2207,7 @@ export default class AircraftModel {
 
         if (this.hit) {
             // 90fps fall rate?...
-            this.altitude -= 90 * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+            this.altitude -= 0.09 * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
             this.speed *= 0.99;
 
             return;
@@ -2226,7 +2227,7 @@ export default class AircraftModel {
         // const nextHistoricalPosition = [
         //     this.positionModel.relativePosition[0],
         //     this.positionModel.relativePosition[1],
-        //     offsetGameTime
+        //     offsetGameTime //note that we might need to accomodate for change in time unit (seconds -> milliseconds)
         // ];
 
         // TODO: whats the difference here between the if and else blocks? why are we looking for a 0 length?
@@ -2239,7 +2240,7 @@ export default class AircraftModel {
                 offsetGameTime
             ]);
             // TODO: this can be abstracted
-        } else if (abs(offsetGameTime - this.relativePositionHistory[this.relativePositionHistory.length - 1][2]) > 4 / GameController.game_speedup()) {
+        } else if (abs(offsetGameTime - this.relativePositionHistory[this.relativePositionHistory.length - 1][2]) > 4000 / GameController.game_speedup()) {
             this.relativePositionHistory.push([
                 this.positionModel.relativePosition[0],
                 this.positionModel.relativePosition[1],
@@ -2266,7 +2267,7 @@ export default class AircraftModel {
             return;
         }
 
-        const secondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const secondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_SECONDS;
         const angle_diff = angle_offset(this.target.heading, this.heading);
         const angle_change = PERFORMANCE.TURN_RATE * secondsElapsed;
 
@@ -2324,8 +2325,8 @@ export default class AircraftModel {
             descentRate = this.model.rate.descent;
         }
 
-        const feetPerSecond = descentRate * TIME.ONE_SECOND_IN_MINUTES;
-        const feetDescended = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const feetPerMilliSecond = descentRate * TIME.ONE_MILLISECOND_IN_MINUTES;
+        const feetDescended = feetPerMilliSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
         if (abs(altitude_diff) < feetDescended) {
             this.altitude = this.target.altitude;

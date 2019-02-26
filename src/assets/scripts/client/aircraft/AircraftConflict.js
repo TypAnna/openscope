@@ -11,6 +11,7 @@ import { vlen, vsub, vturn } from '../math/vector';
 import { degreesToRadians } from '../utilities/unitConverters';
 import { SEPARATION } from '../constants/aircraftConstants';
 import { EVENT } from '../constants/eventNames';
+import { TIME } from '../constants/globalConstants';
 
 /**
  * Details about aircraft in close proximity in relation to 'the rules'
@@ -126,8 +127,8 @@ export default class AircraftConflict {
 
         // TODO: replace magic numbers with enum
         // Ignore aircraft in the first minute of their flight
-        if (gameTime - this.aircraft[0].takeoffTime < 60 ||
-            gameTime - this.aircraft[1].takeoffTime < 60) {
+        if (gameTime - this.aircraft[0].takeoffTime < TIME.ONE_MINUTE_IN_MILLISECONDS ||
+            gameTime - this.aircraft[1].takeoffTime < TIME.ONE_MINUTE_IN_MILLISECONDS) {
             return;
         }
 
