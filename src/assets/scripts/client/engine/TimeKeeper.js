@@ -471,7 +471,7 @@ class TimeKeeper {
 
     /**
      * Boolean abstraction used to determine if this frame is being calculated after returning
-     * from pause, which is assumed when `#_frameDeltaTime` is greater than `1` and
+     * from pause, which is assumed when `#_frameDeltaTime` is greater than `1000` and
      * `#_simulationRate` is `1`. And this is not part of a future track calculation, when
      * `#_futureTrackDeltaTimeCache` is `-1`.
      *
@@ -480,7 +480,7 @@ class TimeKeeper {
      * @return {boolean}
      */
     _isReturningFromPauseAndNotFutureTrack() {
-        return this.deltaTime >= 1 && this._simulationRate === 1 && this._futureTrackDeltaTimeCache === -1;
+        return this.deltaTime >= 1000 && this._simulationRate === 1 && this._futureTrackDeltaTimeCache === -1;
     }
 }
 
