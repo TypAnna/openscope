@@ -1757,8 +1757,7 @@ export default class AircraftModel {
         const turnTimeInMilliSeconds = abs(headingDifference) / PERFORMANCE.TURN_RATE * TIME.ONE_SECOND_IN_MILLISECONDS;    // time to turn headingDifference degrees
         // Radians / seconds is standard and will be used as seconds. 
         // TODO: this should be moved to a class method `.getTurningRadius()`
-        const turningRadius = this.speed * (turnTimeInMilliSeconds * TIME.ONE_HOUR_IN_MILLISECONDS);  // dist covered in the turn, nm
-
+        const turningRadius = this.speed * (turnTimeInMilliSeconds * TIME.ONE_MILLISECOND_IN_HOURS);  // dist covered in the turn, nm
 
         const distanceCoveredDuringTurn = turningRadius * abs(headingDifference);
         const distanceToLocalizer = lateralDistanceFromCourseNm / sin(headingDifference); // dist from the localizer intercept point, nm
