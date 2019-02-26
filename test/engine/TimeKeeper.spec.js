@@ -16,11 +16,11 @@ ava('#deltaTime is the product of #_frameDeltaTime and #_simulationRate', (t) =>
     t.true(TimeKeeper.deltaTime === 33);
 });
 
-ava('#deltaTime returns a max value of 100', (t) => {
-    TimeKeeper._frameDeltaTime = 33;
+ava('#deltaTime returns a max value of 100.000', (t) => {
+    TimeKeeper._frameDeltaTime = 33000;
     TimeKeeper._simulationRate = 10;
 
-    t.true(TimeKeeper.deltaTime === 100);
+    t.true(TimeKeeper.deltaTime === 100000);
 });
 
 ava.skip('#accumulatedDeltaTime is the sum of each deltaTime value from instantiation to now', (t) => {
@@ -126,7 +126,7 @@ ava('.update() increments #_elapsedFrameCount by 1', (t) => {
 });
 
 ava('.update() resets #_frameStartTimestamp to #currentTime when elapsed time is > frameDelay', (t) => {
-    TimeKeeper._frameStartTimestamp = 10;
+    TimeKeeper._frameStartTimestamp = 10000;
     TimeKeeper.update();
 
     t.true(TimeKeeper._frameStartTimestamp === TimeKeeper._previousFrameTimestamp);
@@ -175,8 +175,8 @@ ava('.updateTimescale() updates #timescale value', (t) => {
     t.true(TimeKeeper._simulationRate === 3);
 });
 
-ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false when #_frameDeltaTime is > than 1 and #_simulationRate is 1', (t) => {
-    TimeKeeper._frameDeltaTime = 0.5;
+ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false when #_frameDeltaTime is not > than 1000 and #_simulationRate is 1', (t) => {
+    TimeKeeper._frameDeltaTime = 500;
     TimeKeeper._simulationRate = 1;
     TimeKeeper._futureTrackDeltaTimeCache = -1;
 
@@ -184,7 +184,7 @@ ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false when #_frame
 });
 
 ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false #_simulationRate is not === 1', (t) => {
-    TimeKeeper._frameDeltaTime = 0.5;
+    TimeKeeper._frameDeltaTime = 1000;
     TimeKeeper._simulationRate = 2;
     TimeKeeper._futureTrackDeltaTimeCache = -1;
 
@@ -192,7 +192,7 @@ ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false #_simulation
 });
 
 ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false #_futureTrackDeltaTimeCache is not === -1', (t) => {
-    TimeKeeper._frameDeltaTime = 0.5;
+    TimeKeeper._frameDeltaTime = 1000;
     TimeKeeper._simulationRate = 1;
     TimeKeeper._futureTrackDeltaTimeCache = 5;
 
@@ -200,7 +200,7 @@ ava.serial('._isReturningFromPauseAndNotFutureTrack() returns false #_futureTrac
 });
 
 ava.serial('._isReturningFromPauseAndNotFutureTrack() returns true only when all three conditions are met', (t) => {
-    TimeKeeper._frameDeltaTime = 2;
+    TimeKeeper._frameDeltaTime = 2000;
     TimeKeeper._simulationRate = 1;
     TimeKeeper._futureTrackDeltaTimeCache = -1;
 
