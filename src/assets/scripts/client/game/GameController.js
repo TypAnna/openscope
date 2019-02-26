@@ -230,7 +230,7 @@ class GameController {
      * @method game_get_weighted_score
      */
     game_get_weighted_score() {
-        const hoursPlayed = TimeKeeper.accumulatedDeltaTime / TIME.ONE_HOUR_IN_MILLISECONDS;
+        const hoursPlayed = TimeKeeper.accumulatedDeltaTime / (TIME.ONE_HOUR_IN_SECONDS * TimeKeeper.TIME_UNIT);
         const scorePerHour = this.game.score / hoursPlayed;
 
         return scorePerHour;
@@ -368,7 +368,7 @@ class GameController {
      * @for GameController
      * @method game_timeout
      * @param func {function} called when timeout is triggered
-     * @param delay {number} in milliseconds
+     * @param delay {number} in TIME_UNIT
      * @param that
      * @param data
      * @return {array} gameTimeout
@@ -386,7 +386,7 @@ class GameController {
      * @for GameController
      * @method game_interval
      * @param func {function} called when timeout is triggered
-     * @param delay {number} in milliseconds
+     * @param delay {number} in TIME_UNIT
      * @param that
      * @param data
      * @return {array} to

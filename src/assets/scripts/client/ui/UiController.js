@@ -10,6 +10,7 @@ import { speech_toggle } from '../speech';
 import { EVENT } from '../constants/eventNames';
 import { SELECTORS } from '../constants/selectors';
 import { TRACKABLE_EVENT } from '../constants/trackableEvents';
+import TimeKeeper from '../engine/TimeKeeper';
 
 /**
  * @class UiController
@@ -368,7 +369,7 @@ class UiController {
             setTimeout(() => {
                 uiLogView.remove();
             }, 10000);
-        }, 3000, window, html);
+        }, 3 * TimeKeeper.TIME_UNIT, window, html);
     }
 
     /**
