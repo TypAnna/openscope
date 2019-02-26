@@ -342,14 +342,14 @@ export default class AircraftModel {
 
         /**
          * Time spent taxiing to the runway. *NOTE* this should be INCREASED
-         * to around 60000 once the taxi vs LUAW issue is resolved (#406)
+         * to around 60 * TIME_UNIT once the taxi vs LUAW issue is resolved (#406)
          *
          * @for AircraftModel
          * @property taxi_time
          * @type {number}
-         * @default 3000
+         * @default 3 * TimeKeeper.TIME_UNIT
          */
-        this.taxi_time = 3000;
+        this.taxi_time = 3 * TimeKeeper.TIME_UNIT;
 
         /**
          * Either IFR or VFR (Instrument/Visual Flight Rules)
@@ -832,9 +832,9 @@ export default class AircraftModel {
         const waypointDistance = this.positionModel.distanceToPosition(waypointModel.positionModel);
         const speedChange = waypointSpeed - this.speed;
         const decelerationRate = -this.model.rate.decelerate / 2; // units of rate.decel are 'knots per 2 seconds'
-        const decelerationTime = speedChange / decelerationRate * TIME.ONE_SECOND_IN_MILLISECONDS;
-        // decelerationTime is displayed in milliseconds. 
-        const timeUntilWaypoint = waypointDistance / this.groundSpeed * TIME.ONE_HOUR_IN_MILLISECONDS;
+        const decelerationTime = speedChange / decelerationRate * TimeKeeper.TIME_UNIT;
+        // decelerationTime is displayed in milliseconds.
+        const timeUntilWaypoint = waypointDistance / this.groundSpeed * TimeKeeper.TIME_UNIT;
 
         return decelerationTime > timeUntilWaypoint;
     }
@@ -1754,10 +1754,10 @@ export default class AircraftModel {
         const headingDifference = angle_offset(course, this.heading);
         const bearingFromAircaftToRunway = this.positionModel.bearingToPosition(datum);
         const angleAwayFromLocalizer = course - bearingFromAircaftToRunway;
-        const turnTimeInMilliSeconds = abs(headingDifference) / PERFORMANCE.TURN_RATE * TIME.ONE_SECOND_IN_MILLISECONDS;    // time to turn headingDifference degrees
-        // Radians / seconds is standard and will be used as seconds. 
+        const turnTimeInTimeUnit = abs(headingDifference) / PERFORMANCE.TURN_RATE * TimeKeeper.TIME_UNIT;    // time to turn headingDifference degrees
+        // Radians / seconds is standard and will be used as seconds.
         // TODO: this should be moved to a class method `.getTurningRadius()`
-        const turningRadius = this.speed * (turnTimeInMilliSeconds * TIME.ONE_MILLISECOND_IN_HOURS);  // dist covered in the turn, nm
+        const turningRadius = this.speed * (turnTimeInTimeUnit * TIME.ONE_SECOND_IN_HOURS / TimeKeeper.TIME_UNIT);  // dist covered in the turn, nm
 
         const distanceCoveredDuringTurn = turningRadius * abs(headingDifference);
         const distanceToLocalizer = lateralDistanceFromCourseNm / sin(headingDifference); // dist from the localizer intercept point, nm
@@ -1882,7 +1882,7 @@ export default class AircraftModel {
         const offset = getOffset(this, waypointRelativePosition, inboundHeading);
         const holdLegDurationInMinutes = holdParameters.legLength.replace('min', '');
         const holdLegDurationInSeconds = holdLegDurationInMinutes * TIME.ONE_MINUTE_IN_SECONDS;
-        const holdLegDurationInMilliSeconds = holdLegDurationInSeconds * TIME.ONE_SECOND_IN_MILLISECONDS;
+        const holdLegDurationInTimeUnit = holdLegDurationInSeconds * TimeKeeper.TIME_UNIT;
         const gameTime = TimeKeeper.accumulatedDeltaTime;
         const isPastFix = offset[1] < 1 && offset[2] < 2;
         const isTimerSet = holdParameters.timer !== INVALID_NUMBER;
@@ -1899,7 +1899,7 @@ export default class AircraftModel {
         let nextTargetHeading = outboundHeading;
 
         if (this.heading === outboundHeading && !isTimerSet) {
-            currentWaypoint.setHoldTimer(gameTime + holdLegDurationInMilliSeconds);
+            currentWaypoint.setHoldTimer(gameTime + holdLegDurationInTimeUnit);
         }
 
         if (isTimerExpired) {
@@ -2210,7 +2210,7 @@ export default class AircraftModel {
 
         if (this.hit) {
             // 90fps fall rate?...
-            this.altitude -= 0.09 * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+            this.altitude -= 90 / TimeKeeper.TIME_UNIT * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
             this.speed *= 0.99;
 
             return;
@@ -2243,7 +2243,7 @@ export default class AircraftModel {
                 offsetGameTime
             ]);
             // TODO: this can be abstracted
-        } else if (abs(offsetGameTime - this.relativePositionHistory[this.relativePositionHistory.length - 1][2]) > 4000 / GameController.game_speedup()) {
+        } else if (abs(offsetGameTime - this.relativePositionHistory[this.relativePositionHistory.length - 1][2]) > 4 * TimeKeeper.TIME_UNIT / GameController.game_speedup()) {
             this.relativePositionHistory.push([
                 this.positionModel.relativePosition[0],
                 this.positionModel.relativePosition[1],
@@ -2270,9 +2270,9 @@ export default class AircraftModel {
             return;
         }
 
-        const milliSecondsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const timeUnitsElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
         const angle_diff = angle_offset(this.target.heading, this.heading);
-        const angle_change = PERFORMANCE.TURN_RATE * milliSecondsElapsed * TIME.ONE_MILLISECOND_IN_SECONDS;
+        const angle_change = PERFORMANCE.TURN_RATE * timeUnitsElapsed / TimeKeeper.TIME_UNIT;
 
         // TODO: clean this up if possible, there is a lot of branching logic here
         if (abs(angle_diff) <= angle_change) {
@@ -2328,8 +2328,8 @@ export default class AircraftModel {
             descentRate = this.model.rate.descent;
         }
 
-        const feetPerMilliSecond = descentRate * TIME.ONE_MILLISECOND_IN_MINUTES;
-        const feetDescended = feetPerMilliSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const feetPerTimeUnit = descentRate * TIME.ONE_SECOND_IN_MINUTES / TimeKeeper.TIME_UNIT;
+        const feetDescended = feetPerTimeUnit * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
         if (abs(altitude_diff) < feetDescended) {
             this.altitude = this.target.altitude;
@@ -2354,8 +2354,8 @@ export default class AircraftModel {
             climbRate = this.model.rate.climb;
         }
 
-        const feetPerMillisecond = climbRate * TIME.ONE_MILLISECOND_IN_MINUTES;
-        const feetClimbed = feetPerMillisecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
+        const feetPerTimeUnit = climbRate * TIME.ONE_SECOND_IN_MINUTES / TimeKeeper.TIME_UNIT;
+        const feetClimbed = feetPerTimeUnit * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
         if (abs(altitude_diff) < abs(feetClimbed)) {
             this.altitude = this.target.altitude;
@@ -2428,7 +2428,7 @@ export default class AircraftModel {
         const groundSpeed = vlen(flightPathVector);
 
         // Calculate new position
-        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_MILLISECOND_IN_HOURS;
+        const hoursElapsed = TimeKeeper.getDeltaTimeForGameStateAndTimewarp() * TIME.ONE_SECOND_IN_HOURS / TimeKeeper.TIME_UNIT;
         const distanceTraveled_nm = groundSpeed * hoursElapsed;
 
         this.positionModel.setCoordinatesByBearingAndDistance(groundTrack, distanceTraveled_nm);
