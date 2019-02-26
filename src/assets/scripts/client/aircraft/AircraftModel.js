@@ -2329,7 +2329,6 @@ export default class AircraftModel {
             descentRate = this.model.rate.descent;
         }
 
-        // TODO: Change descentRate to milliseconds
         const feetPerSecond = descentRate * TIME.ONE_SECOND_IN_MINUTES;
         const feetDescended = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
@@ -2356,7 +2355,6 @@ export default class AircraftModel {
             climbRate = this.model.rate.climb;
         }
         
-        // TODO: Change climbRate to milliseconds
         const feetPerSecond = climbRate * TIME.ONE_SECOND_IN_MINUTES;
         const feetClimbed = feetPerSecond * TimeKeeper.getDeltaTimeForGameStateAndTimewarp();
 
