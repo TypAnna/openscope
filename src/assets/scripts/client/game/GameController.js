@@ -230,7 +230,7 @@ class GameController {
      * @method game_get_weighted_score
      */
     game_get_weighted_score() {
-        const hoursPlayed = TimeKeeper.accumulatedDeltaTime / (TIME.ONE_HOUR_IN_SECONDS * TimeKeeper.TIME_UNIT);
+        const hoursPlayed = TimeKeeper.accumulatedDeltaTime / TIME.ONE_HOUR_IN_SECONDS * TimeKeeper.TIME_UNIT;
         const scorePerHour = this.game.score / hoursPlayed;
 
         return scorePerHour;
