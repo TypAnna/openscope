@@ -507,7 +507,7 @@ export default class WaypointModel {
      *
      * @for WaypointModel
      * @method setHoldTimer
-     * @param expirationTime {number} game time (milliseconds) when the timer should "expire"
+     * @param expirationTime {number} game time (in TIME_UNIT) when the timer should "expire"
      */
     setHoldTimer(expirationTime) {
         if (typeof expirationTime !== 'number') {

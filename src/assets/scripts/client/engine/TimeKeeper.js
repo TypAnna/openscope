@@ -27,6 +27,18 @@ class TimeKeeper {
      */
     constructor() {
         /**
+         * This value holds which time unit the game should use, and the number is
+         * relative to seconds, so TimeKeeper.TIME_UNIT = 1000 means that the time
+         * unit is milliseconds.
+         *
+         * @property _TIME_UNIT
+         * @type {number}
+         * @readonly
+         * @private
+         */
+        this._TIME_UNIT = 1000;
+
+        /**
          * Sum of `deltaTime` values
          *
          * Used an an incrementor, thus we default to `0` instead of `-1`
@@ -51,7 +63,7 @@ class TimeKeeper {
         this._elapsedFrameCount = 0;
 
         /**
-         * Time difference in milliseconds between the `#lastFrame` and `#_frameStartTimestamp`
+         * Time difference in TIME_UNIT between the `#lastFrame` and `#_frameStartTimestamp`
          *
          * **This is the most important value of this class.**
          *
@@ -178,7 +190,17 @@ class TimeKeeper {
     }
 
     /**
-     * Accumulated time since the start of the simulation in milliseconds
+     * Getter for the _TIME_UNIT property.
+     *
+     * @readonly
+     * @memberof TimeKeeper
+     */
+    get TIME_UNIT() {
+        return this._TIME_UNIT;
+    }
+
+    /**
+     * Accumulated time since the start of the simulation in TIME_UNIT
      *
      * @property accumulatedDeltaTime
      * @type {number}
@@ -222,12 +244,12 @@ class TimeKeeper {
      * https://en.wikipedia.org/wiki/Delta_timing
      *
      * @property deltaTime
-     * @return {number} current delta time in milliseconds
+     * @return {number} current delta time in TIME_UNIT
      */
     get deltaTime() {
         const deltaTimeOffsetBySimulationRate = this._frameDeltaTime * this._simulationRate;
 
-        return Math.min(deltaTimeOffsetBySimulationRate, 100 * TIME.ONE_SECOND_IN_MILLISECONDS);
+        return Math.min(deltaTimeOffsetBySimulationRate, 100 * this.TIME_UNIT);
     }
 
     /**
@@ -292,7 +314,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method getDeltaTimeForGameStateAndTimewarp
-     * @return {number} delta time in milliseconds
+     * @return {number} delta time in TIME_UNIT
      */
     getDeltaTimeForGameStateAndTimewarp() {
         if (this.isPaused || this._isReturningFromPauseAndNotFutureTrack()) {
@@ -390,7 +412,7 @@ class TimeKeeper {
             return;
         }
 
-        const currentTime = this.gameTimeMilliseconds;
+        const currentTime = this.gameTimeSeconds * this.TIME_UNIT;
 
         this._incrementFrame();
         this._calculateNextDeltaTime(currentTime);
@@ -438,7 +460,7 @@ class TimeKeeper {
      *
      * @for TimeKeeper
      * @method _calculateNextDelatTime
-     * @param currentTime {number} current time in milliseconds
+     * @param currentTime {number} current time in TIME_UNIT
      * @private
      */
     _calculateNextDeltaTime(currentTime) {
@@ -471,7 +493,7 @@ class TimeKeeper {
 
     /**
      * Boolean abstraction used to determine if this frame is being calculated after returning
-     * from pause, which is assumed when `#_frameDeltaTime` is greater than `1000` and
+     * from pause, which is assumed when `#_frameDeltaTime` is greater than `1 * TIME_UNIT` and
      * `#_simulationRate` is `1`. And this is not part of a future track calculation, when
      * `#_futureTrackDeltaTimeCache` is `-1`.
      *
@@ -480,7 +502,11 @@ class TimeKeeper {
      * @return {boolean}
      */
     _isReturningFromPauseAndNotFutureTrack() {
-        return this.deltaTime >= 1000 && this._simulationRate === 1 && this._futureTrackDeltaTimeCache === -1;
+        return (
+            this.deltaTime >= 1 * this.TIME_UNIT
+            && this._simulationRate === 1
+            && this._futureTrackDeltaTimeCache === -1
+        );
     }
 }
 
